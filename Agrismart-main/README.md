@@ -2,6 +2,7 @@
 
 ## How to build
 
+dotnet nuget add source https://nuget.devexpress.com/SOME_API_KEY/api --name DevExpress
 dotnet build .\AgriSmart.sln
 
 ## Common errors

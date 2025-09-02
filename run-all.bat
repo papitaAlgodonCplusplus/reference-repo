@@ -18,4 +18,7 @@ start cmd /k "cd /d Agrismart-main\AgriSmart.Api.Agronomic && dotnet run"
 echo Starting AgriSmart.Api.Iot...
 start cmd /k "cd /d Agrismart-main\AgriSmart.Api.Iot && dotnet run"
 
+echo Starting AgriSmart.Tools.Desktop...
+start cmd /k "cd /d Agrismart-main\AgriSmart.Tools.Desktop && dotnet run"
+
 echo All services started in separate windows. Check each window for URLs and status.

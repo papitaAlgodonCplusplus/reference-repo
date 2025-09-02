@@ -25,6 +25,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AgriSmart.Application.Agron
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AgriSmart.Application.Iot", "AgriSmart.Application.Iot\AgriSmart.Application.Iot.csproj", "{28E3FAB3-84CA-4B25-AA47-1F3DBC515B6E}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AgriSmart.Tools.Desktop", "AgriSmart.Tools.Desktop\AgriSmart.Tools.Desktop.csproj", "{D7F8FB04-EC03-4EC4-8EED-AB1BF553729A}"
+EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AgriSmart.Core", "AgriSmart.Core\AgriSmart.Core.csproj", "{AA0FA0C5-FB74-4720-BDCD-0720043E7BEE}"
 EndProject
 
