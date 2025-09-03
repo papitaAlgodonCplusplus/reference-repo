@@ -1,171 +1,105 @@
-# Agrismart
+# AgriSmart Main Subfolders Overview
 
-## How to build
+This document describes the main subfolders in the `Agrismart-main` project, summarizing their purpose, how they work, and how to test their functionality.
 
-dotnet nuget add source https://nuget.devexpress.com/SOME_API_KEY/api --name DevExpress
-dotnet build .\AgriSmart.sln
+---
 
-## Common errors
-
-> : error NU1101: Unable to find package DevExpress.Win.Design. No packages exist with this id in source(s): Microsoft Visual Studio Offline Packages, nuget.org
-
-dotnet nuget add source "https://nuget.devexpress.com/{your_devexpress_key}/api" -n DevExpress
-
-OR
-
-AgriSmart.slm REMOVE
-
-> Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AgriSmart.Tools.Desktop", "AgriSmart.Tools.Desktop\AgriSmart.Tools.Desktop.csproj", "{D7F8FB04-EC03-4EC4-8EED-AB1BF553729A}"
-EndProject
-
-
-## Running each module
-
-1. dotnet run --project .\AgriSmart.Api.Agronomic\AgriSmart.Api.Agronomic.csproj
-
-> System.IO.DirectoryNotFoundException: Could not find a part of the path 'C:\Users\AlexQQ\Desktop\reference-repo\Agrismart-main\AgriSmart.Api.Agronomic\Logs\2025-09-02_log.txt'.
-
-mkdir .\AgriSmart.Api.Agronomic\Logs
-
-
-2. dotnet run --project .\AgriSmart.AgronomicProcess\AgriSmart.AgronomicProcess.csproj
-
-3. dotnet run --project .\AgriSmart.Api.Iot\AgriSmart.Api.Iot.csproj
-
-> Unhandled exception. Unhandled exception. System.ObjectDisposedException: Cannot access a disposed object.
-Object name: 'IServiceProvider'.
-
-mkdir .\AgriSmart.Api.Iot\Logs
-
-4. Application.X are Class Libraries, not executables but utils
-
-5. dotnet run --project .\AgriSmart.Calculator\AgriSmart.Calculator.csproj
-> Unhandled exception. System.NullReferenceException: Object reference not set to an instance of an object.
-
-Copy "AgrismartApiConfiguration" from appsettings.json into appsettings.Development.json (AgriSmart.Calculator folder)
-
-> Unhandled exception. System.NullReferenceException: Object reference not set to an instance of an object.
-   at AgriSmart.Calculator.WorkerCalculator..ctor(ILogger`1 logger, IOptions`1 agrismartApiConfiguration) in C:\Users\AlexQQ\Desktop\reference-repo\Agrismart-main\AgriSmart.Calculator\WorkerCalculator.cs:line 31
-
-REVIEW: WorkerCalculator.cs // FIX ENTRY 0
-
-> info: AgriSmart.Calculator.WorkerCalculator[0]
-      Worker running at: 09/02/2025 10:27:11 -06:00
-Unhandled exception. System.NullReferenceException: Object reference not set to an instance of an object.
-   at AgriSmart.Calculator.WorkerCalculator.ExecuteAsync(CancellationToken stoppingToken) in C:\Users\AlexQQ\Desktop\reference-repo\Agrismart-main\AgriSmart.Calculator\WorkerCalculator.cs:line 47
-   at Microsoft.Extensions.Hosting.Internal.Host.StartAsync(CancellationToken cancellationToken)
-   at Microsoft.Extensions.Hosting.HostingAbstractionsHostExtensions.RunAsync(IHost host, CancellationToken token)
-   at Microsoft.Extensions.Hosting.HostingAbstractionsHostExtensions.RunAsync(IHost host, CancellationToken token)
-   at Program.<Main>$(String[] args) in C:\Users\AlexQQ\Desktop\reference-repo\Agrismart-main\AgriSmart.Calculator\Program.cs:line 21
-   at Program.<Main>(String[] args)
-
-REVIEW: WorkerCalculator.cs // FIX ENTRY 1
-
-6.  AgriSmart.Core is a Class Library (util)
-
-7.  AgriSmart.DB is an SQL Project (util)
-
-8.  AgriSmart.Infrastructure is a Class Library (util)
-
-9. dotnet run --project .\Agrismart.MQTTBroker\Agrismart.MQTTBroker.csproj
-
-10. dotnet run --project .\AgriSmart.OnDemandIrrigation\AgriSmart.OnDemandIrrigation.csproj
-
-Errors in appsettings.json and CalculationCalculate, too many to document, so providing full fix instead
-
-## Explanation of each Class
-
-### AgriSmart.AgronomicProcess
+## AgriSmart.AgronomicProcess
 - **Purpose:** Background services for agronomic calculations, raw data processing, and irrigation.
 - **How it works:** Injects configuration and API clients, runs business logic in background tasks, logs actions.
 - **How to test:** Provide configuration and API credentials. Start each service and check logs/results. Input: configuration, API. Output: processed data, logs.
 
 ---
 
-### AgriSmart.Api.Agronomic
+## AgriSmart.Api.Agronomic
 - **Purpose:** API for agronomic data and operations.
 - **How it works:** Exposes controllers for agronomic endpoints, processes requests, interacts with business logic and data models.
 - **How to test:** Send API requests to endpoints, verify responses and data changes. Input: HTTP requests. Output: API responses.
 
 ---
 
-### AgriSmart.Api.Iot
+## AgriSmart.Api.Iot
 - **Purpose:** API for IoT device data and operations.
 - **How it works:** Exposes controllers for IoT endpoints, processes device data, interacts with business logic.
 - **How to test:** Send API requests with device data, verify responses and data storage. Input: HTTP requests. Output: API responses.
 
 ---
 
-### AgriSmart.Application.Agronomic
+## AgriSmart.Application.Agronomic
 - **Purpose:** Application layer for agronomic logic, commands, queries, handlers, and validation.
 - **How it works:** Implements CQRS pattern, processes commands/queries, validates and maps data.
 - **How to test:** Call commands/queries with sample data, verify results and validation. Input: command/query objects. Output: processed results.
 
 ---
 
-### AgriSmart.Application.Iot
+## AgriSmart.Application.Iot
 - **Purpose:** Application layer for IoT logic, commands, queries, handlers, and services.
 - **How it works:** Implements CQRS pattern, processes IoT commands/queries, manages device logic.
 - **How to test:** Call commands/queries with sample device data, verify results. Input: command/query objects. Output: processed results.
 
 ---
 
-### AgriSmart.Calculator
+## AgriSmart.Calculator
 - **Purpose:** Background calculations for agronomic processes and fertilizer needs.
 - **How it works:** Runs calculation logic in background services, provides calculation methods.
 - **How to test:** Start service, call calculation methods with sample inputs, verify outputs. Input: configuration, sample data. Output: calculation results.
 
 ---
 
-### AgriSmart.Core
+## AgriSmart.Core
 - **Purpose:** Core entities, interfaces, and logic for agronomic and IoT processes.
 - **How it works:** Defines entities (Crop, Fertilizer, Water, Measurement, User), interfaces for calculations, and core business logic.
 - **How to test:** Create entity instances, call interface methods, verify outputs. Input: entity properties, method parameters. Output: object state, calculation results.
 
 ---
 
-### AgriSmart.DB
+## AgriSmart.DB
 - **Purpose:** Database project for schema, tables, stored procedures, and scripts.
 - **How it works:** Defines database structure and logic for data storage and retrieval.
 - **How to test:** Run scripts and procedures, verify data changes and integrity. Input: SQL scripts. Output: database state.
 
 ---
 
-### AgriSmart.Infrastructure
+## AgriSmart.Infrastructure
 - **Purpose:** Infrastructure logic and services for the application.
 - **How it works:** Provides supporting services and configuration for other layers.
 - **How to test:** Use infrastructure services in application, verify correct operation. Input: service calls. Output: service results.
 
 ---
 
-### AgriSmart.OnDemandIrrigation
+## AgriSmart.OnDemandIrrigation
 - **Purpose:** Background service for on-demand irrigation processes.
 - **How it works:** Injects configuration, validates settings, executes irrigation logic in a background service.
 - **How to test:** Provide valid configuration and API credentials. Start the service and check logs for irrigation actions. Input: configuration, API. Output: log entries, irrigation actions.
 
 ---
 
-### AgriSmart.Tools.Desktop
+## AgriSmart.Tools.Desktop
 - **Purpose:** Desktop tools and forms for agronomic and irrigation management.
 - **How it works:** Implements Windows Forms for user interaction, data input, and visualization.
 - **How to test:** Run desktop application, interact with forms, verify data entry and results. Input: user actions. Output: UI changes, data updates.
 
 ---
 
-### Agrismart.MQTTBroker
+## Agrismart.MQTTBroker
 - **Purpose:** MQTT broker logic for IoT device communication.
 - **How it works:** Manages MQTT connections, message routing, and device data exchange.
 - **How to test:** Connect devices, send/receive MQTT messages, verify communication. Input: MQTT messages. Output: broker logs, device data.
 
 ---
 
-### OnDemandIrrigation
+## OnDemandIrrigation
 - **Purpose:** Additional logic and services for on-demand irrigation.
 - **How it works:** Supports irrigation scheduling and execution.
 - **How to test:** Run irrigation logic, verify scheduling and execution. Input: irrigation requests. Output: irrigation actions.
 
 ---
 
-### Shiny
+## Shiny
+- **Purpose:** (Not enough context; likely related to notifications or background tasks.)
+- **How it works:** (Not enough context.)
+- **How to test:** (Not enough context.)
 
-TODO
+---
+
+*For more details on any subfolder or class, please specify which one you want to explore further.*
