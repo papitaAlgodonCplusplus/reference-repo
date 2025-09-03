@@ -73,99 +73,541 @@ REVIEW: WorkerCalculator.cs // FIX ENTRY 1
 
 Errors in appsettings.json and CalculationCalculate, too many to document, so providing full fix instead
 
-## Explanation of each Class
+# Detailed Class Explanations - AgriSmart System
 
-### AgriSmart.AgronomicProcess
-- **Purpose:** Background services for agronomic calculations, raw data processing, and irrigation.
-- **How it works:** Injects configuration and API clients, runs business logic in background tasks, logs actions.
-- **How to test:** Provide configuration and API credentials. Start each service and check logs/results. Input: configuration, API. Output: processed data, logs.
+## Overview
+AgriSmart is an agricultural management system with microservices architecture that handles crop production, IoT device management, irrigation control, and agronomic calculations.
 
 ---
 
-### AgriSmart.Api.Agronomic
-- **Purpose:** API for agronomic data and operations.
-- **How it works:** Exposes controllers for agronomic endpoints, processes requests, interacts with business logic and data models.
-- **How to test:** Send API requests to endpoints, verify responses and data changes. Input: HTTP requests. Output: API responses.
+## AgriSmart.AgronomicProcess
+
+**Purpose:** Background service that processes agronomic calculations and raw data for crop production.
+
+### Contents & Important Code:
+- **Main Class:** `WorkerCalculatorP` - Background service worker
+- **Key Components:**
+  - `BusinessEntity` - Manages API sessions and business logic
+  - `CalculationsProcess` - Handles calculation workflows
+  - `CropProductionEntity` - Represents crop production data
+
+### Most Important Functions:
+```csharp
+protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+{
+    session = await businessEntity.CreateApiSessionAsync();
+    IList<CropProductionEntity> cropProductionEntities = await businessEntity.GetCropProductionEntities(session.Token);
+    await calculationsProcess.Calculate(cropProductionEntities, session.Token, stoppingToken);
+}
+```
+
+### Interconnections:
+- **Uses:** AgriSmart API for authentication and data
+- **Consumed by:** Background task scheduler
+- **Dependencies:** AgriSmart.Core entities, Infrastructure services
+
+### Test Checklist:
+- [ ] Configuration files properly loaded (AgronomicProcessConfiguration, AgrismartApiConfiguration)
+- [ ] API authentication successful (session.Token not null)
+- [ ] CropProductionEntities retrieved successfully
+- [ ] Calculations execute without exceptions
+- [ ] Logs show processing activity every 15 minutes
+- [ ] Background service starts and stops cleanly
 
 ---
 
-### AgriSmart.Api.Iot
-- **Purpose:** API for IoT device data and operations.
-- **How it works:** Exposes controllers for IoT endpoints, processes device data, interacts with business logic.
-- **How to test:** Send API requests with device data, verify responses and data storage. Input: HTTP requests. Output: API responses.
+## AgriSmart.Api.Agronomic
+
+**Purpose:** RESTful API exposing agronomic data and operations endpoints.
+
+### Contents & Important Code:
+- **Controllers:** Multiple controllers for different entities
+  - `AnalyticalEntityController`
+  - `CompanyController`
+  - `CropProductionIrrigationSectorController`
+  - `RelayModuleCropProductionIrrigationSectorController`
+
+### Most Important Functions:
+```csharp
+[HttpGet]
+public async Task<ActionResult<Response<GetAllAnalyticalEntitiesResponse>>> GetAll([FromQuery] GetAllAnalyticalEntitiesQuery query)
+{
+    var response = await _mediator.Send(query);
+    return response.Success ? Ok(response) : BadRequest(response);
+}
+
+[HttpPost]
+public async Task<ActionResult<Response<CreateAnalyticalEntityResponse>>> Post(CreateAnalyticalEntityCommand command)
+{
+    var response = await _mediator.Send(command);
+    return response.Success ? Ok(response) : BadRequest(response);
+}
+```
+
+### Interconnections:
+- **Uses:** MediatR for CQRS pattern, AgriSmart.Application.Agronomic for business logic
+- **Consumed by:** External clients, frontend applications, other microservices
+- **Dependencies:** JWT authentication, Entity Framework, SQL Server database
+
+### Test Checklist:
+- [ ] API starts successfully on configured port
+- [ ] JWT authentication works correctly
+- [ ] All controller endpoints respond (GET, POST, PUT, DELETE)
+- [ ] CRUD operations work for all entities
+- [ ] Proper HTTP status codes returned (200, 400, 401)
+- [ ] Database connections established
+- [ ] Logs directory exists and logging works
+- [ ] API documentation (Swagger) accessible
 
 ---
 
-### AgriSmart.Application.Agronomic
-- **Purpose:** Application layer for agronomic logic, commands, queries, handlers, and validation.
-- **How it works:** Implements CQRS pattern, processes commands/queries, validates and maps data.
-- **How to test:** Call commands/queries with sample data, verify results and validation. Input: command/query objects. Output: processed results.
+## AgriSmart.Api.Iot
+
+**Purpose:** RESTful API for IoT device data collection and management.
+
+### Contents & Important Code:
+- **Controllers:** IoT-specific controllers for device management
+- **Services:** `DeviceSensorCacheService` for caching sensor data
+- **Background Services:** `DeviceSensorCacheRefreshHandler`
+
+### Most Important Functions:
+```csharp
+// Device authentication and data processing
+AuthenticateDeviceHandler
+AddDeviceRawDataHandler
+AddMqttDeviceRawDataHandler
+ProcessDeviceRawDataHandler
+```
+
+### Interconnections:
+- **Uses:** AgriSmart.Application.Iot, caching services, database
+- **Consumed by:** IoT devices, MQTT clients, external monitoring systems
+- **Dependencies:** Memory caching, background services
+
+### Test Checklist:
+- [ ] API responds to device authentication requests
+- [ ] Raw device data can be submitted successfully
+- [ ] MQTT device data processing works
+- [ ] Device sensor cache refreshes properly
+- [ ] Background services start without errors
+- [ ] Database connections for IoT data storage
+- [ ] Memory cache operations function correctly
+- [ ] Device authentication validates properly
 
 ---
 
-### AgriSmart.Application.Iot
-- **Purpose:** Application layer for IoT logic, commands, queries, handlers, and services.
-- **How it works:** Implements CQRS pattern, processes IoT commands/queries, manages device logic.
-- **How to test:** Call commands/queries with sample device data, verify results. Input: command/query objects. Output: processed results.
+## AgriSmart.Application.Agronomic
+
+**Purpose:** Application layer implementing CQRS pattern for agronomic business logic.
+
+### Contents & Important Code:
+- **Commands:** Create, Update, Delete operations
+- **Queries:** Data retrieval operations
+- **Handlers:** Process commands and queries
+- **Validation:** Data validation logic
+
+### Most Important Functions:
+```csharp
+// CQRS Pattern Implementation
+GetAllAnalyticalEntitiesQuery/Handler
+GetAnalyticalEntityByIdQuery/Handler
+CreateAnalyticalEntityCommand/Handler
+UpdateAnalyticalEntityCommand/Handler
+```
+
+### Interconnections:
+- **Used by:** AgriSmart.Api.Agronomic controllers
+- **Uses:** AgriSmart.Core entities, Infrastructure repositories
+- **Dependencies:** MediatR, validation frameworks
+
+### Test Checklist:
+- [ ] All query handlers return expected data structures
+- [ ] Command handlers process operations successfully
+- [ ] Validation rules properly implemented
+- [ ] Error handling for invalid inputs
+- [ ] Response objects properly constructed
+- [ ] Integration with repository layer works
+- [ ] AutoMapper configurations correct (if used)
 
 ---
 
-### AgriSmart.Calculator
-- **Purpose:** Background calculations for agronomic processes and fertilizer needs.
-- **How it works:** Runs calculation logic in background services, provides calculation methods.
-- **How to test:** Start service, call calculation methods with sample inputs, verify outputs. Input: configuration, sample data. Output: calculation results.
+## AgriSmart.Application.Iot
+
+**Purpose:** Application layer for IoT device operations using CQRS pattern.
+
+### Contents & Important Code:
+- **Commands:** Device registration, data submission
+- **Queries:** Device data retrieval
+- **Handlers:** IoT-specific business logic
+- **Services:** Device management services
+
+### Most Important Functions:
+```csharp
+// IoT-specific handlers
+AuthenticateDeviceHandler
+AddDeviceRawDataHandler
+ProcessDeviceRawDataHandler
+DeviceSensorCacheRefreshHandler
+```
+
+### Interconnections:
+- **Used by:** AgriSmart.Api.Iot
+- **Uses:** AgriSmart.Core IoT entities
+- **Dependencies:** Caching services, data repositories
+
+### Test Checklist:
+- [ ] Device authentication logic works correctly
+- [ ] Raw data processing handles various data formats
+- [ ] Cache refresh operations complete successfully
+- [ ] Error handling for malformed device data
+- [ ] Integration with IoT repositories
+- [ ] Background service operations
 
 ---
 
-### AgriSmart.Core
-- **Purpose:** Core entities, interfaces, and logic for agronomic and IoT processes.
-- **How it works:** Defines entities (Crop, Fertilizer, Water, Measurement, User), interfaces for calculations, and core business logic.
-- **How to test:** Create entity instances, call interface methods, verify outputs. Input: entity properties, method parameters. Output: object state, calculation results.
+## AgriSmart.Calculator
+
+**Purpose:** Background service for agronomic calculations and fertilizer requirements.
+
+### Contents & Important Code:
+- **Main Class:** `WorkerCalculator` - Background calculation service
+- **Logic Classes:** 
+  - `CalculationsProcess` - Core calculation logic
+  - `BusinessEntity` - Business operations
+  - `CalculationsIrrigation` - Irrigation-specific calculations
+
+### Most Important Functions:
+```csharp
+public WorkerCalculator(ILogger<WorkerCalculator> logger, IOptions<AgrismartApiConfiguration> agrismartApiConfiguration)
+{
+    session = calculationsProcess.CreateApiSession();
+}
+
+protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+{
+    calculationsProcess.CalculationCalculate(session.Token);
+    await Task.Delay(10000, stoppingToken); // 10-second intervals
+}
+```
+
+### Interconnections:
+- **Uses:** AgriSmart API for data access
+- **Consumed by:** System scheduler
+- **Dependencies:** Configuration settings, API authentication
+
+### Test Checklist:
+- [ ] Configuration properly loaded (AgrismartApiConfiguration)
+- [ ] API session creation successful
+- [ ] Session token validation works
+- [ ] CalculationCalculate method executes without errors
+- [ ] Background service runs continuously
+- [ ] 10-second delay intervals maintained
+- [ ] Proper error handling for null sessions
+- [ ] Logging outputs calculation activities
 
 ---
 
-### AgriSmart.DB
-- **Purpose:** Database project for schema, tables, stored procedures, and scripts.
-- **How it works:** Defines database structure and logic for data storage and retrieval.
-- **How to test:** Run scripts and procedures, verify data changes and integrity. Input: SQL scripts. Output: database state.
+## AgriSmart.Core
+
+**Purpose:** Core domain entities, interfaces, and business logic foundation.
+
+### Contents & Important Code:
+- **Entities:**
+  - `CropProductionIrrigationSector` - Irrigation sector management
+  - `AnalyticalEntity` - Analytics and reporting
+  - `IrrigationRequest` - Irrigation control
+  - `CropPhaseOptimal` - Growth phase optimization
+
+### Most Important Functions:
+```csharp
+// Base entity pattern
+public class BaseEntity
+{
+    public int Id { get; set; }
+    public DateTime CreatedDate { get; set; }
+    public int CreatedBy { get; set; }
+    // Additional audit fields
+}
+
+// Core business entities
+public class IrrigationRequest : BaseEntity
+{
+    public int CropProductionId { get; set; }
+    public bool Irrigate { get; set; }
+    public int IrrigationTime { get; set; }
+    public DateTime? DateStarted { get; set; }
+    public DateTime? DateEnded { get; set; }
+}
+```
+
+### Interconnections:
+- **Used by:** All other application layers
+- **Dependencies:** None (pure domain layer)
+- **Consumers:** API layers, Application layers, Infrastructure
+
+### Test Checklist:
+- [ ] Entity instantiation works correctly
+- [ ] Property setters and getters function
+- [ ] BaseEntity inheritance properly implemented
+- [ ] Entity relationships defined correctly
+- [ ] No circular dependencies
+- [ ] Interface contracts properly defined
+- [ ] Domain logic validation rules
 
 ---
 
-### AgriSmart.Infrastructure
-- **Purpose:** Infrastructure logic and services for the application.
-- **How it works:** Provides supporting services and configuration for other layers.
-- **How to test:** Use infrastructure services in application, verify correct operation. Input: service calls. Output: service results.
+## AgriSmart.DB
+
+**Purpose:** Database project containing schema, tables, stored procedures, and data scripts.
+
+### Contents & Important Code:
+- **Scripts:**
+  - `BusinessUnit_InitialData.sql` - Initial system data
+  - `ClearTables.sql` - Database cleanup procedures
+- **Schema:** Complete database structure for AgriSmart system
+
+### Most Important Functions:
+```sql
+-- User management
+INSERT INTO [dbo].[User] ([ClientId],[ProfileId],[UserEmail],[Password], [UserStatusId], [CreatedBy]) 
+VALUES (0, 1, 'ebrecha@iapsoft.com', '123', 1,1)
+
+-- Device registration
+INSERT INTO [dbo].[Device] ([CompanyId], [DeviceId],[CreatedBy]) 
+VALUES ((SELECT [Id] FROM [dbo].[Company] WHERE [Name] = 'Estacion Pruebas UCR'), 'EM01UCR', 1)
+
+-- Measurement variables
+INSERT INTO [dbo].[MeasurementVariableStandard] ([Name],[MeasurementUnitId],[CreatedBy]) 
+VALUES ('Contenido Volumétrico de Agua_CV',68,1)
+```
+
+### Interconnections:
+- **Used by:** All application layers through Entity Framework
+- **Dependencies:** SQL Server
+- **Consumers:** Infrastructure repositories
+
+### Test Checklist:
+- [ ] Database schema deploys successfully
+- [ ] Initial data scripts execute without errors
+- [ ] All tables created with proper constraints
+- [ ] Foreign key relationships established
+- [ ] Stored procedures compile successfully
+- [ ] Sample data populates correctly
+- [ ] Database cleanup scripts work
+- [ ] Connection strings configuration valid
 
 ---
 
-### AgriSmart.OnDemandIrrigation
-- **Purpose:** Background service for on-demand irrigation processes.
-- **How it works:** Injects configuration, validates settings, executes irrigation logic in a background service.
-- **How to test:** Provide valid configuration and API credentials. Start the service and check logs for irrigation actions. Input: configuration, API. Output: log entries, irrigation actions.
+## AgriSmart.Infrastructure
+
+**Purpose:** Infrastructure services and cross-cutting concerns implementation.
+
+### Contents & Important Code:
+- **Data Context:** Entity Framework DbContext
+- **Repositories:** Data access layer implementation
+- **Services:** Supporting infrastructure services
+- **Configuration:** System configuration management
+
+### Most Important Functions:
+```csharp
+// Repository pattern implementation
+public class QueryRepository : IQueryRepository
+{
+    private readonly AgriSmartContext _context;
+    
+    public QueryRepository(AgriSmartContext context)
+    {
+        _context = context;
+    }
+}
+
+// Command repository implementation
+public class CommandRepository : ICommandRepository
+{
+    // CRUD operations implementation
+}
+```
+
+### Interconnections:
+- **Used by:** Application layers
+- **Uses:** AgriSmart.Core interfaces, Entity Framework
+- **Dependencies:** Database context, configuration
+
+### Test Checklist:
+- [ ] DbContext initializes successfully
+- [ ] Repository implementations work correctly
+- [ ] Database migrations apply properly
+- [ ] Configuration services load settings
+- [ ] Dependency injection container setup
+- [ ] Connection pooling functions correctly
+- [ ] Transaction management works
+- [ ] Error handling and logging
 
 ---
 
-### AgriSmart.Tools.Desktop
-- **Purpose:** Desktop tools and forms for agronomic and irrigation management.
-- **How it works:** Implements Windows Forms for user interaction, data input, and visualization.
-- **How to test:** Run desktop application, interact with forms, verify data entry and results. Input: user actions. Output: UI changes, data updates.
+## AgriSmart.OnDemandIrrigation
+
+**Purpose:** Background service for automated irrigation control and scheduling.
+
+### Contents & Important Code:
+- **Background Service:** Automated irrigation execution
+- **Configuration:** Irrigation timing and control settings
+- **API Integration:** Irrigation system communication
+
+### Most Important Functions:
+```csharp
+protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+{
+    // Validate configuration and API credentials
+    // Execute irrigation logic
+    // Log irrigation actions
+}
+```
+
+### Interconnections:
+- **Uses:** AgriSmart API, irrigation hardware APIs
+- **Consumed by:** System scheduler
+- **Dependencies:** Hardware integration, configuration
+
+### Test Checklist:
+- [ ] Configuration validation successful
+- [ ] API credentials authentication works
+- [ ] Background service starts properly
+- [ ] Irrigation logic executes correctly
+- [ ] Hardware communication functional
+- [ ] Logging captures irrigation events
+- [ ] Error handling for hardware failures
+- [ ] Scheduling intervals respected
 
 ---
 
-### Agrismart.MQTTBroker
-- **Purpose:** MQTT broker logic for IoT device communication.
-- **How it works:** Manages MQTT connections, message routing, and device data exchange.
-- **How to test:** Connect devices, send/receive MQTT messages, verify communication. Input: MQTT messages. Output: broker logs, device data.
+## AgriSmart.Tools.Desktop
+
+**Purpose:** Windows Forms desktop application for agronomic data management and visualization.
+
+### Contents & Important Code:
+- **Forms:**
+  - `SubFrmWater` - Water management interface
+  - `SubFrmFertilizerInputs` - Fertilizer input management
+  - `FrmSelectFertilizer` - Fertilizer selection dialog
+  - `FrmInputPresentations` - Input presentation management
+
+### Most Important Functions:
+```csharp
+// Desktop application logic for irrigation calculations
+public class IrrigationDesignCalculationsForCropProductionSoil
+{
+    private double getRequiredNumberOfDropperPerM2()
+    {
+        return 1 / input.BetweenDropperDistance * getBetweenLateralsDistance();
+    }
+    
+    private double getPrecipitationFlowM2Hour()
+    {
+        return input.cropProductionSoil.Dropper.FlowRate / (getBetweenLateralsDistance() * input.BetweenDropperDistance);
+    }
+}
+```
+
+### Interconnections:
+- **Uses:** AgriSmart APIs for data access
+- **Dependencies:** DevExpress UI components, .NET Framework
+- **Consumers:** Desktop users, agronomists
+
+### Test Checklist:
+- [ ] Application launches successfully
+- [ ] All forms load without errors
+- [ ] Data entry validation works
+- [ ] Calculation results display correctly
+- [ ] API communication functional
+- [ ] DevExpress controls render properly
+- [ ] User actions update data correctly
+- [ ] Form navigation works smoothly
+- [ ] Error messages display appropriately
 
 ---
 
-### OnDemandIrrigation
-- **Purpose:** Additional logic and services for on-demand irrigation.
-- **How it works:** Supports irrigation scheduling and execution.
-- **How to test:** Run irrigation logic, verify scheduling and execution. Input: irrigation requests. Output: irrigation actions.
+## Agrismart.MQTTBroker
+
+**Purpose:** MQTT broker for IoT device communication and message routing.
+
+### Contents & Important Code:
+- **Models:**
+  - `IotClient` - MQTT client representation
+- **Broker Logic:** MQTT message routing and device management
+
+### Most Important Functions:
+```csharp
+public record IotClient
+{
+    public string ClientId { get; set; }
+    public string EndPoint { get; set; }
+    public string UserName { get; set; }
+    public string Password { get; set; }
+}
+```
+
+### Interconnections:
+- **Used by:** IoT devices, sensor networks
+- **Uses:** MQTT protocol libraries
+- **Dependencies:** Network communication, device authentication
+
+### Test Checklist:
+- [ ] MQTT broker starts successfully
+- [ ] Device connections established
+- [ ] Message routing works correctly
+- [ ] Client authentication functional
+- [ ] Topic subscriptions work
+- [ ] Message persistence (if configured)
+- [ ] Network connectivity handling
+- [ ] Device disconnection handling
+- [ ] Broker logs capture activities
 
 ---
 
-### Shiny
+## OnDemandIrrigation
 
-TODO
+**Purpose:** Additional irrigation control services and logic.
+
+### Contents & Important Code:
+- **Irrigation Logic:** Scheduling and execution algorithms
+- **Control Systems:** Hardware interface implementations
+
+### Interconnections:
+- **Works with:** AgriSmart.OnDemandIrrigation
+- **Uses:** Irrigation hardware APIs
+- **Dependencies:** System configuration
+
+### Test Checklist:
+- [ ] Irrigation requests processed correctly
+- [ ] Hardware commands executed successfully
+- [ ] Scheduling logic functions properly
+- [ ] Integration with main irrigation service
+- [ ] Error handling for hardware failures
+- [ ] Status reporting works
+
+---
+
+## System Integration Test Checklist
+
+### Overall System Tests:
+- [ ] All services start in correct order
+- [ ] Inter-service communication works
+- [ ] Database connectivity across all modules
+- [ ] API authentication flows function
+- [ ] MQTT broker handles device connections
+- [ ] Background services run continuously
+- [ ] Desktop application connects to APIs
+- [ ] Irrigation systems respond to commands
+- [ ] Logging works across all components
+- [ ] Error handling and recovery mechanisms
+- [ ] Configuration loading from all sources
+- [ ] Performance under expected load
+
+### Data Flow Tests:
+- [ ] IoT data flows from devices → MQTT → API → Database
+- [ ] Agronomic calculations trigger properly
+- [ ] Irrigation commands execute end-to-end
+- [ ] Desktop tools can read/write data
+- [ ] Background processes don't interfere with APIs
+- [ ] Cache refresh operations work correctly
